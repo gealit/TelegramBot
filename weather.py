@@ -51,7 +51,7 @@ def get_weather(city_name):
            f'{res}'
 
 
-bot = telebot.TeleBot('KEY')
+bot = telebot.TeleBot('API_KEY')
 
 
 @bot.message_handler(commands=['start', 'help'])
