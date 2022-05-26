@@ -1,14 +1,13 @@
 import telebot
 from telebot import types
 import requests
-import random
+from fake_useragent import UserAgent
 
 
 from bs4 import BeautifulSoup as bs
 
 
 def get_weather(city_name):
-    pass
     city_dict = {
         'москва': 'moskva',
         'казань': 'kazan',
@@ -19,18 +18,22 @@ def get_weather(city_name):
 
     url = f'https://www.meteoservice.ru/weather/overview/{city}'
 
-    proxies = (
-        {"http": "socks5://72.206.181.97:64943"},
-        {"http": "157.245.33.179:80"},
-        {"http": "161.35.78.6:80"},
-        {"https": "43.134.211.251:1080"}
-    )
+    ua = UserAgent()
+    headers = {
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+        'User-Agent': ua.random
+    }
 
-    proxy = random.choice(proxies)
+    user_city_id = {'moskva': '1',
+                    'sochi': '18253',
+                    'kazan': '139',
+                    'lyubertsyi': '142'}
 
-    print(proxy)
+    cookies = {
+        'user_city_id': user_city_id[city],
+    }
 
-    response = requests.get(url=url, proxies=proxy)
+    response = requests.get(url=url, headers=headers, cookies=cookies)
     soup = bs(response.text, 'lxml')
 
     temp = soup.find('span', class_="value")
@@ -40,15 +43,14 @@ def get_weather(city_name):
     ).text.strip()
 
     description_string = [
-        f'{elem.strip()}' for elem in description.split('. ')
+        f'{elem.strip()}' for elem in description.split(',')
     ]
 
     res = ''
     for elem in description_string:
-        res += ''.join(f'{elem}\n')
+        res += ''.join(f'{elem.strip()}\n')
 
-    return f'Температура сейчас: {temp.text}\nОщущается как: {temp.text}\n' \
-           f'{res}'
+    return f'Температура сейчас: {temp.text}\nОщущается как: {temp.text}\n{res}'
 
 
 bot = telebot.TeleBot('API_KEY')
@@ -68,6 +70,7 @@ def send_welcome(message):
 @bot.message_handler(content_types='text')
 def send_weather(message):
     if message.text in ['Москва', 'Люберцы', 'Казань', 'Сочи']:
+        print(message.text)
         bot.send_message(message.chat.id, get_weather(message.text))
 
 
